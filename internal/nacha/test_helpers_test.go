@@ -1,6 +1,21 @@
 package nacha
 
-import "strings"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func readValidFixture(t *testing.T) string {
+	t.Helper()
+
+	content, err := os.ReadFile(filepath.Join("testdata", "sample-valid.ach"))
+	if err != nil {
+		t.Fatalf("read valid fixture: %v", err)
+	}
+	return string(content)
+}
 
 func validDomesticFile() string {
 	lines := []string{

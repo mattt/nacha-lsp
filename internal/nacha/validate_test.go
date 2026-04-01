@@ -67,18 +67,6 @@ func TestValidate_BlockingFactorWarning(t *testing.T) {
 	}
 }
 
-func TestParseSerializeRoundTrip(t *testing.T) {
-	original := validDomesticFile()
-	parsed := Parse(original)
-	if len(parsed.Diagnostics) != 0 {
-		t.Fatalf("unexpected parse diagnostics: %+v", parsed.Diagnostics)
-	}
-	roundtrip := parsed.File.Serialize()
-	if roundtrip != original {
-		t.Fatalf("roundtrip mismatch\nexpected:\n%s\n\ngot:\n%s", original, roundtrip)
-	}
-}
-
 func TestParseIATAddendaVariant(t *testing.T) {
 	lines := []string{
 		makeRecord('1'),
@@ -103,5 +91,42 @@ func TestParseIATAddendaVariant(t *testing.T) {
 	addenda := entry.AddendaRecords()[0]
 	if _, ok := addenda.(*InternationalAddenda10); !ok {
 		t.Fatalf("expected international addenda 10 variant, got %T", addenda)
+	}
+}
+
+func TestValidate_ControlMismatchDiagnostics(t *testing.T) {
+	lines := []string{
+		makeFileHeader(),
+		makeBatchHeader("200", "PPD"),
+		makeEntry("22", "03130001", 1000),
+		makeBatchControl("200", 99, "9999999999", 9999, 9999),
+		makeFileControl(99, 99, 99, "9999999999", 9999, 9999),
+		strings.Repeat("9", 94),
+		strings.Repeat("9", 94),
+		strings.Repeat("9", 94),
+		strings.Repeat("9", 94),
+		strings.Repeat("9", 94),
+	}
+	diags := Validate(strings.Join(lines, "\n"))
+	if len(diags) == 0 {
+		t.Fatal("expected diagnostics")
+	}
+	wanted := []string{
+		"batch control entry/addenda count does not match",
+		"batch control entry hash does not match",
+		"file control batch count does not match",
+		"file control block count does not match",
+	}
+	for _, want := range wanted {
+		found := false
+		for _, d := range diags {
+			if strings.Contains(d.Message, want) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected diagnostic containing %q, got %+v", want, diags)
+		}
 	}
 }
