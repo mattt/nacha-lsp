@@ -3,7 +3,7 @@
 `nacha-lsp` is a Language Server Protocol implementation for NACHA ACH text files.
 It includes a self-contained NACHA parser and serializer used by diagnostics and hover.
 
-## MVP features
+## Features
 
 - Diagnostics on save for core NACHA structure checks:
   - each record is 94 characters,
@@ -11,7 +11,18 @@ It includes a self-contained NACHA parser and serializer used by diagnostics and
   - record ordering and batch envelope checks,
   - control-level count/hash/total consistency checks,
   - blocking factor warning when line count is not a multiple of 10.
-- Hover documentation for key field ranges in `1`, `5`, `6`, `7`, `8`, and `9` records.
+- Hover documentation for field ranges in `1`, `5`, `6`, `7`, `8`, and `9` records.
+- Document symbols for file/batch/entry/addenda outline.
+- Completion suggestions for key NACHA code fields:
+  - batch `Service Class Code` (`200`, `220`, `225`),
+  - batch `Standard Entry Class Code` (`PPD`, `CCD`, `CTX`, `IAT`),
+  - entry `Transaction Code` (`22`, `27`, `32`, `37`),
+  - addenda `Addenda Type Code` (`02`, `05`, `98`, `99`).
+- Document formatting via parse/serialize canonicalization (non-destructive; returns no edits when parse has errors).
+- Quick-fix code actions for:
+  - normalizing line length to 94,
+  - appending `9` padding records to satisfy the block factor,
+  - inserting a trailing newline at EOF.
 
 ## Parser coverage
 
@@ -70,6 +81,10 @@ You can wire this binary from a VS Code extension (or local test extension host)
 2. Open a valid NACHA file and save: no diagnostics should appear.
 3. Break a line to fewer than 94 characters and save: diagnostics should appear.
 4. Hover over a `6` record at columns 2-3: transaction-code hover details should appear.
+5. Request document symbols: file/batch/entry structure should appear.
+6. Trigger completion at a known code field (for example batch columns 2-4): code suggestions should appear.
+7. Run format document on a valid file with CRLF line endings: output should be canonical LF NACHA records.
+8. Request code actions on a 94-character diagnostic: quick fixes should include record-length normalization.
 
 ## Round-trip guarantee
 

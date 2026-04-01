@@ -68,6 +68,134 @@ func TestHoverReturnsFieldDocumentation(t *testing.T) {
 	}
 }
 
+func TestDocumentSymbolReturnsBatchAndEntryOutline(t *testing.T) {
+	h := servertest.New(t, handler.New())
+	uri := lsp.DocumentURI("file:///symbols.ach")
+
+	if err := h.DidOpen(uri, "plaintext", validNachaFile()); err != nil {
+		t.Fatal(err)
+	}
+
+	symbols, err := h.DocumentSymbol(uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(symbols) == 0 {
+		t.Fatal("expected document symbols")
+	}
+
+	var batch *lsp.DocumentSymbol
+	for i := range symbols {
+		if strings.HasPrefix(symbols[i].Name, "Batch ") {
+			batch = &symbols[i]
+			break
+		}
+	}
+	if batch == nil {
+		t.Fatal("expected batch symbol")
+	}
+	if len(batch.Children) == 0 {
+		t.Fatal("expected entry symbols under batch")
+	}
+}
+
+func TestCompletionReturnsServiceClassSuggestions(t *testing.T) {
+	h := servertest.New(t, handler.New())
+	uri := lsp.DocumentURI("file:///completion.ach")
+
+	if err := h.DidOpen(uri, "plaintext", validNachaFile()); err != nil {
+		t.Fatal(err)
+	}
+
+	completion, err := h.Completion(uri, 1, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if completion == nil || len(completion.Items) == 0 {
+		t.Fatal("expected completion items")
+	}
+
+	if !hasCompletionLabel(completion.Items, "200") {
+		t.Fatalf("expected service class completion options, got: %+v", completion.Items)
+	}
+}
+
+func TestFormattingReturnsCanonicalEdit(t *testing.T) {
+	h := servertest.New(t, handler.New())
+	uri := lsp.DocumentURI("file:///formatting.ach")
+	text := strings.ReplaceAll(validNachaFile(), "\n", "\r\n")
+
+	if err := h.DidOpen(uri, "plaintext", text); err != nil {
+		t.Fatal(err)
+	}
+
+	edits, err := h.Formatting(uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(edits) == 0 {
+		t.Fatal("expected formatting edits for CRLF input")
+	}
+	if strings.Contains(edits[0].NewText, "\r") {
+		t.Fatalf("expected canonical LF output, got: %q", edits[0].NewText)
+	}
+}
+
+func TestCodeActionReturnsLengthFix(t *testing.T) {
+	h := servertest.New(t, handler.New())
+	uri := lsp.DocumentURI("file:///codeactions.ach")
+
+	if err := h.DidOpen(uri, "plaintext", "short line"); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.DidSave(uri); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	diags, err := h.WaitForDiagnostics(ctx, uri)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(diags) == 0 {
+		t.Fatal("expected diagnostics for invalid content")
+	}
+
+	actions, err := h.CodeAction(&lsp.CodeActionParams{
+		TextDocument: lsp.TextDocumentIdentifier{URI: uri},
+		Range:        diags[0].Range,
+		Context:      lsp.CodeActionContext{Diagnostics: diags},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(actions) == 0 {
+		t.Fatal("expected quick fixes")
+	}
+
+	var found bool
+	for _, action := range actions {
+		if action.Title == "Normalize record length to 94 characters" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected record-length code action, got: %+v", actions)
+	}
+}
+
+func hasCompletionLabel(items []lsp.CompletionItem, label string) bool {
+	for _, item := range items {
+		if item.Label == label {
+			return true
+		}
+	}
+	return false
+}
+
 func validNachaFile() string {
 	return strings.Join([]string{
 		makeFileHeader(),
