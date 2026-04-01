@@ -116,6 +116,8 @@ var baseRecordFields = map[byte][]FieldSpec{
 		{Name: "Total Debit Amount", Start: 21, End: 32, Description: "Total debit amount in cents."},
 		{Name: "Total Credit Amount", Start: 33, End: 44, Description: "Total credit amount in cents."},
 		{Name: "Company ID", Start: 45, End: 54, Description: "Company identifier."},
+		{Name: "Message Authentication Code", Start: 55, End: 73, Description: "Message Authentication Code or reserved."},
+		{Name: "Reserved", Start: 74, End: 79, Description: "Reserved; must be blank."},
 		{Name: "Originating DFI Identification", Start: 80, End: 87, Description: "ODFI routing prefix."},
 		{Name: "Batch Number", Start: 88, End: 94, Description: "Batch sequence number."},
 	},
