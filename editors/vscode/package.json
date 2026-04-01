@@ -1,0 +1,44 @@
+{
+  "name": "nacha-lsp",
+  "displayName": "NACHA LSP",
+  "description": "Minimal VS Code wrapper for the NACHA language server binary.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:nacha"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "nacha",
+        "aliases": [
+          "NACHA",
+          "nacha"
+        ],
+        "extensions": [
+          ".ach",
+          ".txt"
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

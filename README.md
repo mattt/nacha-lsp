@@ -53,38 +53,47 @@ go build -o bin/nacha-lsp ./cmd/nacha-lsp
 
 The server uses stdio transport.
 
-## VS Code wiring (minimal)
+## VS Code wrapper extension
 
-You can wire this binary from a VS Code extension (or local test extension host) with a language client config similar to:
+This repo includes a minimal VS Code client wrapper at `editors/vscode`.
 
-```json
-{
-  "contributes": {
-    "languages": [
-      {
-        "id": "nacha",
-        "extensions": [".ach", ".nacha"],
-        "aliases": ["NACHA"]
-      }
-    ]
-  },
-  "activationEvents": ["onLanguage:nacha"],
-  "serverOptions": {
-    "command": "/absolute/path/to/bin/nacha-lsp"
-  }
-}
+Build and copy the latest server binary into the extension:
+
+```bash
+make build-dev
+```
+
+Install extension dependencies:
+
+```bash
+cd editors/vscode
+npm install
+```
+
+Then press `F5` in the `editors/vscode` project to launch an Extension Development Host.
+The wrapper starts `editors/vscode/bin/nacha-lsp` over stdio.
+If `F5` is not available, use Run and Debug -> `Run NACHA LSP Extension`,
+or Command Palette -> `Debug: Start Debugging`.
+You can also launch from terminal:
+
+```bash
+cd editors/vscode
+npm run compile
+code --extensionDevelopmentPath="$(pwd)"
 ```
 
 ## Manual smoke test
 
-1. Start VS Code with NACHA file association enabled (`.ach` or `.nacha`).
-2. Open a valid NACHA file and save: no diagnostics should appear.
-3. Break a line to fewer than 94 characters and save: diagnostics should appear.
-4. Hover over a `6` record at columns 2-3: transaction-code hover details should appear.
-5. Request document symbols: file/batch/entry structure should appear.
-6. Trigger completion at a known code field (for example batch columns 2-4): code suggestions should appear.
-7. Run format document on a valid file with CRLF line endings: output should be canonical LF NACHA records.
-8. Request code actions on a 94-character diagnostic: quick fixes should include record-length normalization.
+1. Build and copy the server with `make build-dev`.
+2. Launch the Extension Development Host from `editors/vscode` (`F5`).
+3. In the Extension Development Host, create and save a `.ach` file.
+4. Open a valid NACHA file and save: no diagnostics should appear.
+5. Break a line to fewer than 94 characters and save: diagnostics should appear.
+6. Hover over a `6` record at columns 2-3: transaction-code hover details should appear.
+7. Request document symbols: file/batch/entry structure should appear.
+8. Trigger completion at a known code field (for example batch columns 2-4): code suggestions should appear.
+9. Run format document on a valid file with CRLF line endings: output should be canonical LF NACHA records.
+10. Request code actions on a 94-character diagnostic: quick fixes should include record-length normalization.
 
 ## Round-trip guarantee
 
