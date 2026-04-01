@@ -5,7 +5,7 @@ with a self-contained parser and serializer.
 
 ## Features
 
-- Diagnostics on save for core NACHA structure checks:
+- Diagnostics while editing (open/change/save) for core NACHA structure checks:
   - each record is 94 characters
   - valid record type prefixes (`1`, `5`, `6`, `7`, `8`, `9`)
   - record ordering and batch envelope checks
@@ -64,6 +64,7 @@ The server uses stdio transport.
 ## VS Code extension
 
 A minimal VS Code client wrapper is included at `editors/vscode`.
+It also contributes NACHA syntax highlighting via a TextMate grammar.
 
 Build and copy the latest server binary into the extension:
 

@@ -1,0 +1,95 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "NACHA",
+  "scopeName": "source.nacha",
+  "patterns": [
+    {
+      "name": "comment.line.padding.nacha",
+      "match": "^9{94}$"
+    },
+    {
+      "name": "invalid.illegal.length.nacha",
+      "match": "^.{0,93}$|^.{95,}$"
+    },
+    {
+      "name": "invalid.illegal.record-type.nacha",
+      "match": "^[^156789].*$"
+    },
+    {
+      "name": "meta.record.file-header.nacha",
+      "match": "^(1)(.{93})$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.record-type.nacha"
+        },
+        "2": {
+          "name": "meta.body.file-header.nacha"
+        }
+      }
+    },
+    {
+      "name": "meta.record.batch-header.nacha",
+      "match": "^(5)(.{93})$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.record-type.nacha"
+        },
+        "2": {
+          "name": "meta.body.batch-header.nacha"
+        }
+      }
+    },
+    {
+      "name": "meta.record.entry-detail.nacha",
+      "match": "^(6)(.{93})$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.record-type.nacha"
+        },
+        "2": {
+          "name": "meta.body.entry-detail.nacha"
+        }
+      }
+    },
+    {
+      "name": "meta.record.addenda.nacha",
+      "match": "^(7)(.{93})$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.record-type.nacha"
+        },
+        "2": {
+          "name": "meta.body.addenda.nacha"
+        }
+      }
+    },
+    {
+      "name": "meta.record.batch-control.nacha",
+      "match": "^(8)(.{93})$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.record-type.nacha"
+        },
+        "2": {
+          "name": "meta.body.batch-control.nacha"
+        }
+      }
+    },
+    {
+      "name": "meta.record.file-control.nacha",
+      "match": "^(9)(.{93})$",
+      "captures": {
+        "1": {
+          "name": "keyword.control.record-type.nacha"
+        },
+        "2": {
+          "name": "meta.body.file-control.nacha"
+        }
+      }
+    },
+    {
+      "name": "constant.numeric.nacha",
+      "match": "\\d+"
+    }
+  ]
+}

@@ -25,7 +25,15 @@
         "extensions": [
           ".ach",
           ".txt"
-        ]
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "nacha",
+        "scopeName": "source.nacha",
+        "path": "./syntaxes/nacha.tmLanguage.json"
       }
     ]
   },

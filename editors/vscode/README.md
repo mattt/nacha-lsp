@@ -2,6 +2,7 @@
 
 This extension starts the local `nacha-lsp` server binary over stdio
 for smoke testing diagnostics and hovers.
+It also contributes NACHA syntax highlighting.
 
 ## Quick start
 
@@ -11,4 +12,4 @@ for smoke testing diagnostics and hovers.
    `cd editors/vscode && npm install`
 3. Press **F5** in the `editors/vscode` workspace
    to launch the Extension Development Host.
-4. Open and save a file ending in `.ach`.
+4. Open a file ending in `.ach` and type to see live diagnostics.

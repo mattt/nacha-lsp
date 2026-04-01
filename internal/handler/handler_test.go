@@ -47,6 +47,33 @@ func TestDidSaveValidFileHasNoDiagnostics(t *testing.T) {
 	}
 }
 
+func TestDidChangePublishesDiagnosticsWithoutSave(t *testing.T) {
+	h := servertest.New(t, handler.New())
+	uri := lsp.DocumentURI("file:///change.ach")
+
+	if err := h.DidOpen(uri, "plaintext", validNachaFile()); err != nil {
+		t.Fatal(err)
+	}
+	h.ClearDiagnostics()
+
+	if err := h.DidChange(uri, 2, "gibberish"); err != nil {
+		t.Fatal(err)
+	}
+
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		diags := h.Diagnostics(uri)
+		if len(diags) > 0 {
+			return
+		}
+		if time.Now().After(deadline) {
+			all := h.AllDiagnostics()
+			t.Fatalf("expected diagnostics after typing invalid content; got %d publish notifications", len(all))
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 func TestHoverReturnsFieldDocumentation(t *testing.T) {
 	h := servertest.New(t, handler.New())
 	uri := lsp.DocumentURI("file:///hover.ach")

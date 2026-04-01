@@ -53,36 +53,45 @@ func (h *Handler) Initialize(_ context.Context, _ *lsp.InitializeParams) (*lsp.I
 
 func (h *Handler) Shutdown(_ context.Context) error { return nil }
 
-func (h *Handler) DidOpen(_ context.Context, params *lsp.DidOpenTextDocumentParams) error {
+func (h *Handler) DidOpen(ctx context.Context, params *lsp.DidOpenTextDocumentParams) error {
 	h.documents[params.TextDocument.URI] = params.TextDocument.Text
-	return nil
+	return h.publishDiagnostics(ctx, params.TextDocument.URI)
 }
 
-func (h *Handler) DidChange(_ context.Context, params *lsp.DidChangeTextDocumentParams) error {
+func (h *Handler) DidChange(ctx context.Context, params *lsp.DidChangeTextDocumentParams) error {
 	if len(params.ContentChanges) > 0 {
 		h.documents[params.TextDocument.URI] = params.ContentChanges[len(params.ContentChanges)-1].Text
 	}
-	return nil
+	return h.publishDiagnostics(ctx, params.TextDocument.URI)
 }
 
-func (h *Handler) DidClose(_ context.Context, params *lsp.DidCloseTextDocumentParams) error {
+func (h *Handler) DidClose(ctx context.Context, params *lsp.DidCloseTextDocumentParams) error {
 	delete(h.documents, params.TextDocument.URI)
-	return nil
+	if h.client == nil {
+		return nil
+	}
+	return h.client.PublishDiagnostics(ctx, &lsp.PublishDiagnosticsParams{
+		URI:         params.TextDocument.URI,
+		Diagnostics: []lsp.Diagnostic{},
+	})
 }
 
 func (h *Handler) DidSave(ctx context.Context, params *lsp.DidSaveTextDocumentParams) error {
 	if params.Text != nil {
 		h.documents[params.TextDocument.URI] = *params.Text
 	}
+	return h.publishDiagnostics(ctx, params.TextDocument.URI)
+}
+
+func (h *Handler) publishDiagnostics(_ context.Context, uri lsp.DocumentURI) error {
 	if h.client == nil {
 		return nil
 	}
-
-	text := h.documents[params.TextDocument.URI]
+	text := h.documents[uri]
 	diagnostics := buildDiagnostics(text)
 
-	return h.client.PublishDiagnostics(ctx, &lsp.PublishDiagnosticsParams{
-		URI:         params.TextDocument.URI,
+	return h.client.PublishDiagnostics(context.Background(), &lsp.PublishDiagnosticsParams{
+		URI:         uri,
 		Diagnostics: diagnostics,
 	})
 }
