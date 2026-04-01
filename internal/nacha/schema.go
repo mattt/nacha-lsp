@@ -1,9 +1,6 @@
 package nacha
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
 const (
 	recordLength = 94
@@ -15,6 +12,49 @@ type FieldSpec struct {
 	Start       int
 	End         int
 	Description string
+}
+
+type PositionInfo struct {
+	RecordType byte
+	RecordName string
+	Position   int
+	Field      *FieldSpec
+	FieldValue string
+}
+
+func LookupPosition(record string, column int) (PositionInfo, bool) {
+	if len(record) == 0 {
+		return PositionInfo{}, false
+	}
+
+	recordType := record[0]
+	recordName, ok := recordDescriptions[recordType]
+	if !ok {
+		return PositionInfo{}, false
+	}
+
+	if column < 0 {
+		column = 0
+	}
+	position := column + 1
+
+	info := PositionInfo{
+		RecordType: recordType,
+		RecordName: recordName,
+		Position:   position,
+	}
+
+	for _, field := range baseRecordFields[recordType] {
+		if position < field.Start || position > field.End {
+			continue
+		}
+		field := field
+		info.Field = &field
+		info.FieldValue = fieldValueTrimmed(record, field.Start, field.End)
+		return info, true
+	}
+
+	return info, true
 }
 
 var baseRecordFields = map[byte][]FieldSpec{
@@ -95,36 +135,6 @@ func fieldValue(raw string, start, end int) string {
 
 func fieldValueTrimmed(raw string, start, end int) string {
 	return strings.TrimSpace(fieldValue(raw, start, end))
-}
-
-func HoverContent(record string, character int) string {
-	if len(record) == 0 {
-		return ""
-	}
-
-	recordType := record[0]
-	desc, ok := recordDescriptions[recordType]
-	if !ok {
-		return ""
-	}
-
-	if character < 0 {
-		character = 0
-	}
-	position := character + 1
-
-	for _, field := range baseRecordFields[recordType] {
-		if position < field.Start || position > field.End {
-			continue
-		}
-		value := fieldValueTrimmed(record, field.Start, field.End)
-		return fmt.Sprintf(
-			"**%s** (`%c`)  \n**Field:** %s (positions %d-%d)  \n**Value:** `%s`  \n%s",
-			desc, recordType, field.Name, field.Start, field.End, value, field.Description,
-		)
-	}
-
-	return fmt.Sprintf("**%s** (`%c`)  \nPosition %d has no hover metadata yet.", desc, recordType, position)
 }
 
 func isAllNines(raw string) bool {

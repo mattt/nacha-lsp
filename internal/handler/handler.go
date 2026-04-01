@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/mattt/nacha-lsp/internal/nacha"
@@ -116,7 +117,28 @@ func hoverAt(text string, line, character int) string {
 	if line < 0 || line >= len(lines) {
 		return ""
 	}
-	return nacha.HoverContent(lines[line], character)
+	info, ok := nacha.LookupPosition(lines[line], character)
+	if !ok {
+		return ""
+	}
+	if info.Field != nil {
+		return fmt.Sprintf(
+			"**%s** (`%c`)  \n**Field:** %s (positions %d-%d)  \n**Value:** `%s`  \n%s",
+			info.RecordName,
+			info.RecordType,
+			info.Field.Name,
+			info.Field.Start,
+			info.Field.End,
+			info.FieldValue,
+			info.Field.Description,
+		)
+	}
+	return fmt.Sprintf(
+		"**%s** (`%c`)  \nPosition %d has no hover metadata yet.",
+		info.RecordName,
+		info.RecordType,
+		info.Position,
+	)
 }
 
 func splitLines(text string) []string {

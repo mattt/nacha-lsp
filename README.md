@@ -30,7 +30,7 @@ Public internal API entry points:
 - `nacha.Parse(text)` returns a typed file model and parser diagnostics.
 - `(*nacha.File).Serialize()` round-trips parsed records back to NACHA text.
 - `nacha.Validate(text)` returns parser-backed validation diagnostics.
-- `nacha.HoverAt(text, line, character)` resolves field metadata from shared schema definitions.
+- `nacha.LookupPosition(record, column)` resolves schema-backed position metadata for a single NACHA record.
 
 Reference: [ACH File Overview](https://achdevguide.nacha.org/ach-file-overview).
 
@@ -78,11 +78,15 @@ record ordering so `parse -> serialize -> parse` remains stable in tests.
 
 ## Example NACHA sample
 
-Use fixed-width (94-char) records. This is a placeholder-form sample pattern:
-
-- `1` + 93 chars
-- `5` + 93 chars
-- `6` + 93 chars
-- `8` + 93 chars
-- `9` + 93 chars
-- five additional `9` padding lines to reach 10 total records
+```
+101 03130001212345678902604011200A094101DEST BANK              ORIGIN CO                      
+5200ACME COMPANY                         1234567890PPDPAYROLL         260401   1123456780000001
+622031300012987654321        0000001000EMP001         JOHN DOE                0123456780000001
+820000000100031300010000000000000000000010001234567890                         123456780000001
+90000010000010000000100031300010000000000000000001000                                       
+9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+```
