@@ -95,6 +95,69 @@ func TestHoverReturnsFieldDocumentation(t *testing.T) {
 	}
 }
 
+func TestHoverRangeCoversFullFieldWithSpaces(t *testing.T) {
+	h := servertest.New(t, handler.New())
+	uri := lsp.DocumentURI("file:///hover-range.ach")
+	text := validNachaFile()
+
+	if err := h.DidOpen(uri, "plaintext", text); err != nil {
+		t.Fatal(err)
+	}
+
+	hover, err := h.Hover(uri, 0, 45)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hover == nil || hover.Range == nil {
+		t.Fatal("expected hover range")
+	}
+	if hover.Range.Start.Character != 40 || hover.Range.End.Character != 49 {
+		t.Fatalf("unexpected hover range: start=%d end=%d", hover.Range.Start.Character, hover.Range.End.Character)
+	}
+}
+
+func TestHoverRangeBatchHeaderBatchNumber(t *testing.T) {
+	h := servertest.New(t, handler.New())
+	uri := lsp.DocumentURI("file:///hover-batch-number.ach")
+	text := validNachaFile()
+
+	if err := h.DidOpen(uri, "plaintext", text); err != nil {
+		t.Fatal(err)
+	}
+
+	hover, err := h.Hover(uri, 1, 90)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hover == nil || hover.Range == nil {
+		t.Fatal("expected hover range")
+	}
+	if hover.Range.Start.Character != 87 || hover.Range.End.Character != 94 {
+		t.Fatalf("unexpected batch-number range: start=%d end=%d", hover.Range.Start.Character, hover.Range.End.Character)
+	}
+}
+
+func TestHoverRangeEntryTraceNumber(t *testing.T) {
+	h := servertest.New(t, handler.New())
+	uri := lsp.DocumentURI("file:///hover-trace.ach")
+	text := validNachaFile()
+
+	if err := h.DidOpen(uri, "plaintext", text); err != nil {
+		t.Fatal(err)
+	}
+
+	hover, err := h.Hover(uri, 2, 90)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hover == nil || hover.Range == nil {
+		t.Fatal("expected hover range")
+	}
+	if hover.Range.Start.Character != 79 || hover.Range.End.Character != 94 {
+		t.Fatalf("unexpected trace-number range: start=%d end=%d", hover.Range.Start.Character, hover.Range.End.Character)
+	}
+}
+
 func TestDocumentSymbolReturnsBatchAndEntryOutline(t *testing.T) {
 	h := servertest.New(t, handler.New())
 	uri := lsp.DocumentURI("file:///symbols.ach")
@@ -257,6 +320,8 @@ func makeFileHeader() string {
 	writeField(line, 35, 37, "094")
 	writeField(line, 38, 39, "10")
 	writeField(line, 40, 40, "1")
+	writeField(line, 41, 63, "DEST BANK")
+	writeField(line, 64, 86, "ORIGIN CO")
 	return string(line)
 }
 

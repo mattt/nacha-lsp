@@ -4,7 +4,7 @@
   "scopeName": "source.nacha",
   "patterns": [
     {
-      "name": "comment.line.padding.nacha",
+      "name": "meta.padding.nacha",
       "match": "^9{94}$"
     },
     {
@@ -17,79 +17,219 @@
     },
     {
       "name": "meta.record.file-header.nacha",
-      "match": "^(1)(.{93})$",
+      "match": "^(1)(.{2})(.{10})(.{10})(.{6})(.{4})(.)(.{3})(.{2})(.)(.{23})(.{23})(.{8})$",
       "captures": {
         "1": {
           "name": "keyword.control.record-type.nacha"
         },
         "2": {
-          "name": "meta.body.file-header.nacha"
+          "name": "constant.numeric.control.priority-code.nacha"
+        },
+        "3": {
+          "name": "constant.numeric.control.immediate-destination.nacha"
+        },
+        "4": {
+          "name": "constant.numeric.control.immediate-origin.nacha"
+        },
+        "5": {
+          "name": "constant.numeric.control.file-date.nacha"
+        },
+        "6": {
+          "name": "constant.numeric.control.file-time.nacha"
+        },
+        "7": {
+          "name": "constant.other.control.file-id-modifier.nacha"
+        },
+        "8": {
+          "name": "constant.numeric.control.record-size.nacha"
+        },
+        "9": {
+          "name": "constant.numeric.control.blocking-factor.nacha"
+        },
+        "10": {
+          "name": "constant.numeric.control.format-code.nacha"
+        },
+        "11": {
+          "name": "string.unquoted.value.institution-name.nacha"
+        },
+        "12": {
+          "name": "string.unquoted.value.institution-name.nacha"
+        },
+        "13": {
+          "name": "string.unquoted.value.reference-code.nacha"
         }
       }
     },
     {
       "name": "meta.record.batch-header.nacha",
-      "match": "^(5)(.{93})$",
+      "match": "^(5)(.{3})(.{16})(.{20})(.{10})(.{3})(.{10})(.{6})(.{6})(.{3})(.)(.{8})(.{7})$",
       "captures": {
         "1": {
           "name": "keyword.control.record-type.nacha"
         },
         "2": {
-          "name": "meta.body.batch-header.nacha"
+          "name": "constant.numeric.control.service-class-code.nacha"
+        },
+        "3": {
+          "name": "string.unquoted.value.company-name.nacha"
+        },
+        "4": {
+          "name": "string.unquoted.value.company-discretionary-data.nacha"
+        },
+        "5": {
+          "name": "constant.numeric.control.company-identification.nacha"
+        },
+        "6": {
+          "name": "storage.type.control.sec-code.nacha"
+        },
+        "7": {
+          "name": "string.unquoted.value.entry-description.nacha"
+        },
+        "8": {
+          "name": "string.unquoted.value.company-descriptive-date.nacha"
+        },
+        "9": {
+          "name": "constant.numeric.control.effective-date.nacha"
+        },
+        "10": {
+          "name": "constant.numeric.control.settlement-date.nacha"
+        },
+        "11": {
+          "name": "constant.numeric.control.originator-status-code.nacha"
+        },
+        "12": {
+          "name": "constant.numeric.control.odfi-identification.nacha"
+        },
+        "13": {
+          "name": "constant.numeric.control.batch-number.nacha"
         }
       }
     },
     {
       "name": "meta.record.entry-detail.nacha",
-      "match": "^(6)(.{93})$",
+      "match": "^(6)(.{2})(.{8})(.)(.{17})(.{10})(.{15})(.{22})(.{2})(.)(.{15})$",
       "captures": {
         "1": {
           "name": "keyword.control.record-type.nacha"
         },
         "2": {
-          "name": "meta.body.entry-detail.nacha"
+          "name": "constant.numeric.control.transaction-code.nacha"
+        },
+        "3": {
+          "name": "constant.numeric.control.receiving-dfi-identification.nacha"
+        },
+        "4": {
+          "name": "constant.numeric.control.check-digit.nacha"
+        },
+        "5": {
+          "name": "string.unquoted.value.account-number.nacha"
+        },
+        "6": {
+          "name": "constant.numeric.value.amount.nacha"
+        },
+        "7": {
+          "name": "string.unquoted.value.identification-number.nacha"
+        },
+        "8": {
+          "name": "string.unquoted.value.receiver-name.nacha"
+        },
+        "9": {
+          "name": "string.unquoted.value.discretionary-data.nacha"
+        },
+        "10": {
+          "name": "constant.numeric.control.addenda-indicator.nacha"
+        },
+        "11": {
+          "name": "constant.numeric.control.trace-number.nacha"
         }
       }
     },
     {
       "name": "meta.record.addenda.nacha",
-      "match": "^(7)(.{93})$",
+      "match": "^(7)(.{2})(.{80})(.{4})(.{7})$",
       "captures": {
         "1": {
           "name": "keyword.control.record-type.nacha"
         },
         "2": {
-          "name": "meta.body.addenda.nacha"
+          "name": "constant.numeric.control.addenda-type-code.nacha"
+        },
+        "3": {
+          "name": "string.unquoted.value.addenda-payload.nacha"
+        },
+        "4": {
+          "name": "constant.numeric.control.addenda-sequence-number.nacha"
+        },
+        "5": {
+          "name": "constant.numeric.control.entry-detail-sequence-number.nacha"
         }
       }
     },
     {
       "name": "meta.record.batch-control.nacha",
-      "match": "^(8)(.{93})$",
+      "match": "^(8)(.{3})(.{6})(.{10})(.{12})(.{12})(.{10})(.{19})(.{6})(.{8})(.{7})$",
       "captures": {
         "1": {
           "name": "keyword.control.record-type.nacha"
         },
         "2": {
-          "name": "meta.body.batch-control.nacha"
+          "name": "constant.numeric.control.service-class-code.nacha"
+        },
+        "3": {
+          "name": "constant.numeric.control.entry-addenda-count.nacha"
+        },
+        "4": {
+          "name": "constant.numeric.control.entry-hash.nacha"
+        },
+        "5": {
+          "name": "constant.numeric.value.total-debit.nacha"
+        },
+        "6": {
+          "name": "constant.numeric.value.total-credit.nacha"
+        },
+        "7": {
+          "name": "constant.numeric.control.company-id.nacha"
+        },
+        "8": {
+          "name": "string.unquoted.value.reserved.nacha"
+        },
+        "9": {
+          "name": "constant.numeric.control.odfi-identification.nacha"
+        },
+        "10": {
+          "name": "constant.numeric.control.batch-number.nacha"
         }
       }
     },
     {
       "name": "meta.record.file-control.nacha",
-      "match": "^(9)(.{93})$",
+      "match": "^(9)(.{6})(.{6})(.{8})(.{10})(.{12})(.{12})(.{39})$",
       "captures": {
         "1": {
           "name": "keyword.control.record-type.nacha"
         },
         "2": {
-          "name": "meta.body.file-control.nacha"
+          "name": "constant.numeric.control.batch-count.nacha"
+        },
+        "3": {
+          "name": "constant.numeric.control.block-count.nacha"
+        },
+        "4": {
+          "name": "constant.numeric.control.entry-addenda-count.nacha"
+        },
+        "5": {
+          "name": "constant.numeric.control.entry-hash.nacha"
+        },
+        "6": {
+          "name": "constant.numeric.value.total-debit.nacha"
+        },
+        "7": {
+          "name": "constant.numeric.value.total-credit.nacha"
+        },
+        "8": {
+          "name": "string.unquoted.value.reserved.nacha"
         }
       }
-    },
-    {
-      "name": "constant.numeric.nacha",
-      "match": "\\d+"
     }
   ]
 }

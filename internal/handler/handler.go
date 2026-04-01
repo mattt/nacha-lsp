@@ -106,12 +106,14 @@ func (h *Handler) Hover(_ context.Context, params *lsp.HoverParams) (*lsp.Hover,
 	if content == "" {
 		return nil, nil
 	}
+	hoverRange := hoverRangeAt(text, params.Position.Line, params.Position.Character)
 
 	return &lsp.Hover{
 		Contents: lsp.MarkupContent{
 			Kind:  lsp.Markdown,
 			Value: content,
 		},
+		Range: hoverRange,
 	}, nil
 }
 
@@ -422,6 +424,58 @@ func hoverAt(text string, line, character int) string {
 		info.RecordType,
 		info.Position,
 	)
+}
+
+func hoverRangeAt(text string, line, character int) *lsp.Range {
+	lines := splitLines(text)
+	if line < 0 || line >= len(lines) {
+		return nil
+	}
+	record := lines[line]
+	info, ok := nacha.LookupPosition(record, character)
+	if !ok || info.Field == nil {
+		return nil
+	}
+	start := info.Field.Start - 1
+	end := info.Field.End
+
+	segmentStart, segmentEnd := trimmedFieldBounds(record, info.Field.Start, info.Field.End)
+	if segmentStart < segmentEnd {
+		start = segmentStart
+		end = segmentEnd
+	}
+
+	return &lsp.Range{
+		Start: lsp.Position{Line: line, Character: start},
+		End:   lsp.Position{Line: line, Character: end},
+	}
+}
+
+func trimmedFieldBounds(record string, start, end int) (int, int) {
+	if start < 1 {
+		start = 1
+	}
+	if end > len(record) {
+		end = len(record)
+	}
+	if start > end || start > len(record) {
+		return -1, -1
+	}
+
+	segment := record[start-1 : end]
+	left := 0
+	for left < len(segment) && segment[left] == ' ' {
+		left++
+	}
+	right := len(segment) - 1
+	for right >= left && segment[right] == ' ' {
+		right--
+	}
+	if left > right {
+		return -1, -1
+	}
+
+	return (start - 1) + left, (start - 1) + right + 1
 }
 
 func lineAt(text string, line int) (string, bool) {
