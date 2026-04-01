@@ -1,3 +1,7 @@
+// Package handler implements the Language Server Protocol handler for
+// nacha-lsp. It connects the nacha parsing and validation library to the
+// LSP server, providing diagnostics, hover information, document symbols,
+// formatting, completions, and code actions for ACH files.
 package handler
 
 import (
@@ -10,21 +14,32 @@ import (
 	"github.com/owenrumney/go-lsp/server"
 )
 
+// Handler is the LSP handler for ACH files. It stores the current text of
+// each open document and delegates language-feature requests to the nacha
+// package for parsing, validation, and field-level metadata lookups.
 type Handler struct {
 	documents map[lsp.DocumentURI]string
 	client    *server.Client
 }
 
+// New returns a new Handler ready to be registered with an LSP server.
 func New() *Handler {
 	return &Handler{
 		documents: make(map[lsp.DocumentURI]string),
 	}
 }
 
+// SetClient stores the LSP client connection used to push diagnostics to the
+// editor. It is called by the server framework after the connection is
+// established.
 func (h *Handler) SetClient(client *server.Client) {
 	h.client = client
 }
 
+// Initialize handles the LSP initialize request and advertises the server's
+// capabilities: full-document text sync, hover, document symbols, formatting,
+// completion (triggered by digit characters and space), and quick-fix code
+// actions.
 func (h *Handler) Initialize(_ context.Context, _ *lsp.InitializeParams) (*lsp.InitializeResult, error) {
 	quickFixKinds := []lsp.CodeActionKind{lsp.CodeActionQuickFix}
 	return &lsp.InitializeResult{
@@ -51,13 +66,18 @@ func (h *Handler) Initialize(_ context.Context, _ *lsp.InitializeParams) (*lsp.I
 	}, nil
 }
 
+// Shutdown handles the LSP shutdown request.
 func (h *Handler) Shutdown(_ context.Context) error { return nil }
 
+// DidOpen handles textDocument/didOpen, storing the document text and
+// publishing diagnostics for the newly opened file.
 func (h *Handler) DidOpen(ctx context.Context, params *lsp.DidOpenTextDocumentParams) error {
 	h.documents[params.TextDocument.URI] = params.TextDocument.Text
 	return h.publishDiagnostics(ctx, params.TextDocument.URI)
 }
 
+// DidChange handles textDocument/didChange, replacing the stored document
+// text with the latest change and re-publishing diagnostics.
 func (h *Handler) DidChange(ctx context.Context, params *lsp.DidChangeTextDocumentParams) error {
 	if len(params.ContentChanges) > 0 {
 		h.documents[params.TextDocument.URI] = params.ContentChanges[len(params.ContentChanges)-1].Text
@@ -65,6 +85,8 @@ func (h *Handler) DidChange(ctx context.Context, params *lsp.DidChangeTextDocume
 	return h.publishDiagnostics(ctx, params.TextDocument.URI)
 }
 
+// DidClose handles textDocument/didClose, removing the stored document and
+// clearing its published diagnostics.
 func (h *Handler) DidClose(ctx context.Context, params *lsp.DidCloseTextDocumentParams) error {
 	delete(h.documents, params.TextDocument.URI)
 	if h.client == nil {
@@ -76,6 +98,8 @@ func (h *Handler) DidClose(ctx context.Context, params *lsp.DidCloseTextDocument
 	})
 }
 
+// DidSave handles textDocument/didSave, updating the stored document text
+// when the save payload includes it, then re-publishing diagnostics.
 func (h *Handler) DidSave(ctx context.Context, params *lsp.DidSaveTextDocumentParams) error {
 	if params.Text != nil {
 		h.documents[params.TextDocument.URI] = *params.Text
@@ -96,6 +120,9 @@ func (h *Handler) publishDiagnostics(_ context.Context, uri lsp.DocumentURI) err
 	})
 }
 
+// Hover handles textDocument/hover, returning a Markdown description of the
+// ACH record name, field name, field position range, current value, and a
+// brief field description for the character under the cursor.
 func (h *Handler) Hover(_ context.Context, params *lsp.HoverParams) (*lsp.Hover, error) {
 	text, ok := h.documents[params.TextDocument.URI]
 	if !ok {
@@ -117,6 +144,12 @@ func (h *Handler) Hover(_ context.Context, params *lsp.HoverParams) (*lsp.Hover,
 	}, nil
 }
 
+// Completion handles textDocument/completion, returning context-aware
+// enum-member suggestions for ACH fields that have a fixed set of valid
+// values: Service Class Code (positions 2–4 of type-5 records), Standard
+// Entry Class Code (positions 51–53 of type-5 records), Transaction Code
+// (positions 2–3 of type-6 records), and Addenda Type Code (positions 2–3
+// of type-7 records).
 func (h *Handler) Completion(_ context.Context, params *lsp.CompletionParams) (*lsp.CompletionList, error) {
 	text, ok := h.documents[params.TextDocument.URI]
 	if !ok {
@@ -162,6 +195,10 @@ func (h *Handler) Completion(_ context.Context, params *lsp.CompletionParams) (*
 	}, nil
 }
 
+// DocumentSymbol handles textDocument/documentSymbol, returning a hierarchical
+// symbol tree for the ACH file: a File Header symbol, one Module symbol per
+// Batch (containing Field symbols for each entry, each of which may have
+// Addenda child symbols), and a File Control symbol.
 func (h *Handler) DocumentSymbol(_ context.Context, params *lsp.DocumentSymbolParams) ([]lsp.DocumentSymbol, error) {
 	text, ok := h.documents[params.TextDocument.URI]
 	if !ok {
@@ -236,6 +273,10 @@ func (h *Handler) DocumentSymbol(_ context.Context, params *lsp.DocumentSymbolPa
 	return symbols, nil
 }
 
+// Formatting handles textDocument/formatting by re-serializing the ACH file
+// from its parsed record structure, which normalizes record lengths and line
+// endings. No edit is returned when the file contains parse errors or when
+// the serialized form is already identical to the document text.
 func (h *Handler) Formatting(_ context.Context, params *lsp.DocumentFormattingParams) ([]lsp.TextEdit, error) {
 	text, ok := h.documents[params.TextDocument.URI]
 	if !ok {
@@ -260,6 +301,13 @@ func (h *Handler) Formatting(_ context.Context, params *lsp.DocumentFormattingPa
 	}, nil
 }
 
+// CodeAction handles textDocument/codeAction, offering quick fixes for
+// common ACH formatting problems:
+//   - Normalizing a record to exactly 94 characters (pad with spaces or
+//     truncate).
+//   - Appending all-nines padding records to satisfy the blocking factor
+//     (total line count must be a multiple of ten).
+//   - Inserting a trailing newline at end of file.
 func (h *Handler) CodeAction(_ context.Context, params *lsp.CodeActionParams) ([]lsp.CodeAction, error) {
 	if len(params.Context.Only) > 0 && !containsCodeActionKind(params.Context.Only, lsp.CodeActionQuickFix) {
 		return nil, nil
@@ -451,6 +499,9 @@ func hoverRangeAt(text string, line, character int) *lsp.Range {
 	}
 }
 
+// trimmedFieldBounds returns the 0-based [start, end) character bounds of
+// the non-whitespace content within the field at [start, end] (1-based,
+// inclusive) of record. Returns (-1, -1) when the field is entirely blank.
 func trimmedFieldBounds(record string, start, end int) (int, int) {
 	if start < 1 {
 		start = 1
@@ -552,6 +603,8 @@ func ensureRecordLength94(raw string) string {
 	return raw + strings.Repeat(" ", 94-len(raw))
 }
 
+// completionSuggestion holds the data for a single completion item returned
+// by completionSuggestions.
 type completionSuggestion struct {
 	label         string
 	value         string
@@ -610,4 +663,3 @@ func splitLines(text string) []string {
 	}
 	return lines
 }
-

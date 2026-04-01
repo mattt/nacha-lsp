@@ -1,18 +1,32 @@
 package nacha
 
+// Severity classifies the urgency of a [Diagnostic].
 type Severity int
 
 const (
+	// SeverityError indicates a structural or data-integrity violation that
+	// makes the ACH file invalid per the Nacha Operating Rules.
 	SeverityError Severity = iota
+
+	// SeverityWarning indicates a deviation from best practice or a
+	// recommendation that does not necessarily invalidate the file (for
+	// example, a line count that is not a multiple of ten, or padding records
+	// that are not all nines).
 	SeverityWarning
 )
 
+// Range identifies a span of characters within a single line of an ACH file.
+// Positions follow the LSP convention: both Line and character offsets are
+// 0-based, StartCharacter is inclusive, and EndCharacter is exclusive.
 type Range struct {
 	Line           int
 	StartCharacter int
 	EndCharacter   int
 }
 
+// Diagnostic reports a problem found during parsing or validation of an ACH
+// file. The embedded [Range] locates the problematic span within the source
+// text so that editors can highlight the affected characters.
 type Diagnostic struct {
 	Range          Range
 	Line           int
@@ -38,6 +52,19 @@ func newDiagnostic(line, start, end int, message string, severity Severity) Diag
 	}
 }
 
+// Validate parses text as an ACH file and runs integrity checks on the
+// resulting [File], returning all diagnostics from both phases.
+//
+// Structural checks (from parsing) include correct record sequence, proper
+// nesting of batches, and non-empty batch bodies.
+//
+// Integrity checks include:
+//   - Line count is a multiple of ten (the blocking factor).
+//   - Each batch control's entry/addenda count, debit total, credit total,
+//     and entry hash match the computed values from the batch's entries.
+//   - The file control's batch count, block count, entry/addenda count,
+//     total debit amount, total credit amount, and entry hash match the
+//     computed values from all batches.
 func Validate(text string) []Diagnostic {
 	parseResult := ParseWithOptions(text, DefaultParseOptions())
 	diags := append([]Diagnostic{}, parseResult.Diagnostics...)

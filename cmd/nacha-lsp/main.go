@@ -1,3 +1,8 @@
+// Command nacha-lsp is a Language Server Protocol server for ACH
+// (Automated Clearing House) files. It communicates over standard input/output
+// using the JSON-RPC 2.0 transport defined by the LSP specification and
+// provides diagnostics, hover, completions, formatting, document symbols, and
+// quick-fix code actions for ACH files.
 package main
 
 import (

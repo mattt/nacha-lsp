@@ -2,26 +2,61 @@ package nacha
 
 import "strings"
 
-const (
-	recordLength = 94
-	blockSize    = 10
-)
+// recordLength is the fixed character width of every ACH record as required
+// by the Nacha Operating Rules. Every line in a valid ACH file is exactly
+// this many characters long.
+const recordLength = 94
 
+// blockSize is the number of records per block. ACH files must contain a
+// total number of records (including padding) that is a multiple of blockSize.
+const blockSize = 10
+
+// FieldSpec describes a single named field within an ACH record type.
+// Start and End are 1-based, inclusive character positions within the
+// 94-character record line.
 type FieldSpec struct {
-	Name        string
-	Start       int
-	End         int
+	// Name is the human-readable field name as defined in the Nacha
+	// specification (e.g. "Immediate Destination", "Transaction Code").
+	Name string
+
+	// Start is the 1-based position of the first character of the field.
+	Start int
+
+	// End is the 1-based position of the last character of the field.
+	End int
+
+	// Description is a brief explanation of the field's purpose and the
+	// expected format or valid values.
 	Description string
 }
 
+// PositionInfo describes the ACH record type and field located at a specific
+// cursor position within a source line, as returned by [LookupPosition].
 type PositionInfo struct {
+	// RecordType is the single-byte record type code of the containing record
+	// ('1', '5', '6', '7', '8', or '9').
 	RecordType byte
+
+	// RecordName is the human-readable name of the record type
+	// (e.g. "File Header", "Entry Detail").
 	RecordName string
-	Position   int
-	Field      *FieldSpec
+
+	// Position is the 1-based character position within the record.
+	Position int
+
+	// Field is the [FieldSpec] whose range contains the cursor position,
+	// or nil when no field metadata covers that position.
+	Field *FieldSpec
+
+	// FieldValue is the trimmed value of Field extracted from the source
+	// record. It is empty when Field is nil.
 	FieldValue string
 }
 
+// LookupPosition returns the record and field information for the character
+// at the given 0-based column within a single ACH record line. The second
+// return value is false when the record type byte (the first character) is
+// not one of the known type codes.
 func LookupPosition(record string, column int) (PositionInfo, bool) {
 	if len(record) == 0 {
 		return PositionInfo{}, false
@@ -142,6 +177,8 @@ var recordDescriptions = map[byte]string{
 	'9': "File Control or Padding",
 }
 
+// fieldValue returns the substring of raw at the given 1-based, inclusive
+// character positions [start, end]. Out-of-range positions are clamped.
 func fieldValue(raw string, start, end int) string {
 	if start < 1 {
 		start = 1
@@ -155,6 +192,8 @@ func fieldValue(raw string, start, end int) string {
 	return raw[start-1 : end]
 }
 
+// fieldValueTrimmed returns fieldValue with leading and trailing whitespace
+// stripped.
 func fieldValueTrimmed(raw string, start, end int) string {
 	return strings.TrimSpace(fieldValue(raw, start, end))
 }
@@ -171,6 +210,9 @@ func isAllNines(raw string) bool {
 	return true
 }
 
+// formatUnsigned formats value as a zero-padded decimal string of the given
+// width. Negative values are treated as zero. If the decimal representation
+// exceeds width digits, the least-significant width digits are returned.
 func formatUnsigned(value int64, width int) string {
 	if value < 0 {
 		value = 0

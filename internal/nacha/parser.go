@@ -8,11 +8,21 @@ import (
 	"strings"
 )
 
+// ParseOptions controls how strictly the parser enforces the Nacha
+// specification. Both options default to true via [DefaultParseOptions].
 type ParseOptions struct {
+	// StrictPadding requires that all records after the File Control record
+	// consist entirely of '9' characters. When false, non-all-nines padding
+	// records produce a warning rather than an error.
 	StrictPadding bool
+
+	// StrictLengths requires that every record be exactly 94 characters.
+	// When false, short or long records emit a diagnostic but are still parsed.
 	StrictLengths bool
 }
 
+// DefaultParseOptions returns the recommended ParseOptions for production use,
+// with both StrictPadding and StrictLengths enabled.
 func DefaultParseOptions() ParseOptions {
 	return ParseOptions{
 		StrictPadding: true,
@@ -20,6 +30,11 @@ func DefaultParseOptions() ParseOptions {
 	}
 }
 
+// ParseResult holds the output of a parse operation: the structured [File]
+// and any [Diagnostic] messages produced during parsing.
+//
+// Diagnostics may be present even when File is non-nil; a partially valid
+// file can still yield a populated File with accompanying error messages.
 type ParseResult struct {
 	File        *File
 	Diagnostics []Diagnostic
@@ -109,18 +124,26 @@ type parseContext struct {
 	lastType         byte
 }
 
+// Parse parses text as an ACH file using [DefaultParseOptions] and returns
+// the result. All problems are reported as [Diagnostic] values on the
+// returned [ParseResult]; Parse itself never returns an error.
 func Parse(text string) ParseResult {
 	return ParseWithOptions(text, DefaultParseOptions())
 }
 
+// ParseWithOptions parses text as an ACH file using the given options and
+// returns the result. All problems are reported as [Diagnostic] values on
+// the returned [ParseResult].
 func ParseWithOptions(text string, options ParseOptions) ParseResult {
 	return parseLines(splitLines(text), options)
 }
 
+// ParseReader parses an ACH file from r using [DefaultParseOptions].
 func ParseReader(r io.Reader) (ParseResult, error) {
 	return ParseReaderWithOptions(r, DefaultParseOptions())
 }
 
+// ParseReaderWithOptions parses an ACH file from r using the given options.
 func ParseReaderWithOptions(r io.Reader, options ParseOptions) (ParseResult, error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 0, 256), 1024*1024)
@@ -134,10 +157,13 @@ func ParseReaderWithOptions(r io.Reader, options ParseOptions) (ParseResult, err
 	return parseLines(lines, options), nil
 }
 
+// ParseFile opens the file at path and parses it using [DefaultParseOptions].
 func ParseFile(path string) (ParseResult, error) {
 	return ParseFileWithOptions(path, DefaultParseOptions())
 }
 
+// ParseFileWithOptions opens the file at path and parses it using the given
+// options.
 func ParseFileWithOptions(path string, options ParseOptions) (ParseResult, error) {
 	f, err := os.Open(path)
 	if err != nil {
