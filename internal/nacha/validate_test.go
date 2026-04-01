@@ -6,19 +6,7 @@ import (
 )
 
 func TestValidate_ValidFile(t *testing.T) {
-	text := strings.Join([]string{
-		recordLine('1', 'A'),
-		recordLine('5', 'B'),
-		recordLine('6', 'C'),
-		recordLine('8', 'D'),
-		recordLine('9', 'E'),
-		recordLine('9', '9'),
-		recordLine('9', '9'),
-		recordLine('9', '9'),
-		recordLine('9', '9'),
-		recordLine('9', '9'),
-	}, "\n")
-
+	text := validDomesticFile()
 	diags := Validate(text)
 	if len(diags) != 0 {
 		t.Fatalf("expected no diagnostics, got %d: %+v", len(diags), diags)
@@ -35,9 +23,9 @@ func TestValidate_InvalidLength(t *testing.T) {
 
 func TestValidate_OrderError(t *testing.T) {
 	text := strings.Join([]string{
-		recordLine('1', 'A'),
-		recordLine('6', 'C'),
-		recordLine('9', '9'),
+		makeRecord('1'),
+		makeRecord('6'),
+		makeRecord('9'),
 	}, "\n")
 
 	diags := Validate(text)
@@ -59,11 +47,11 @@ func TestValidate_OrderError(t *testing.T) {
 
 func TestValidate_BlockingFactorWarning(t *testing.T) {
 	text := strings.Join([]string{
-		recordLine('1', 'A'),
-		recordLine('5', 'B'),
-		recordLine('6', 'C'),
-		recordLine('8', 'D'),
-		recordLine('9', 'E'),
+		makeRecord('1'),
+		makeRecord('5'),
+		makeRecord('6'),
+		makeRecord('8'),
+		makeRecord('9'),
 	}, "\n")
 
 	diags := Validate(text)
@@ -79,6 +67,41 @@ func TestValidate_BlockingFactorWarning(t *testing.T) {
 	}
 }
 
-func recordLine(recordType byte, fill byte) string {
-	return string(recordType) + strings.Repeat(string(fill), 93)
+func TestParseSerializeRoundTrip(t *testing.T) {
+	original := validDomesticFile()
+	parsed := Parse(original)
+	if len(parsed.Diagnostics) != 0 {
+		t.Fatalf("unexpected parse diagnostics: %+v", parsed.Diagnostics)
+	}
+	roundtrip := parsed.File.Serialize()
+	if roundtrip != original {
+		t.Fatalf("roundtrip mismatch\nexpected:\n%s\n\ngot:\n%s", original, roundtrip)
+	}
+}
+
+func TestParseIATAddendaVariant(t *testing.T) {
+	lines := []string{
+		makeRecord('1'),
+		makeIATBatchHeader(),
+		makeIATEntry(),
+		makeIATAddenda("10"),
+		makeBatchControl("200", 2, "0003130001", 0, 1000),
+		makeFileControl(1, 1, 2, "0003130001", 0, 1000),
+		strings.Repeat("9", 94),
+		strings.Repeat("9", 94),
+		strings.Repeat("9", 94),
+		strings.Repeat("9", 94),
+	}
+	parsed := Parse(strings.Join(lines, "\n"))
+	if len(parsed.File.Batches) != 1 {
+		t.Fatalf("expected 1 batch, got %d", len(parsed.File.Batches))
+	}
+	entry := parsed.File.Batches[0].Entries[0]
+	if _, ok := entry.(*InternationalEntryDetail); !ok {
+		t.Fatalf("expected international entry variant, got %T", entry)
+	}
+	addenda := entry.AddendaRecords()[0]
+	if _, ok := addenda.(*InternationalAddenda10); !ok {
+		t.Fatalf("expected international addenda 10 variant, got %T", addenda)
+	}
 }

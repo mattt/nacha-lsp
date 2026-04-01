@@ -1,15 +1,36 @@
 # nacha-lsp
 
-`nacha-lsp` is a minimal Language Server Protocol implementation for NACHA ACH text files.
+`nacha-lsp` is a Language Server Protocol implementation for NACHA ACH text files.
+It includes a self-contained NACHA parser and serializer used by diagnostics and hover.
 
 ## MVP features
 
 - Diagnostics on save for core NACHA structure checks:
   - each record is 94 characters,
   - valid record type prefixes (`1`, `5`, `6`, `7`, `8`, `9`),
-  - coarse record ordering and batch envelope checks,
+  - record ordering and batch envelope checks,
+  - control-level count/hash/total consistency checks,
   - blocking factor warning when line count is not a multiple of 10.
-- Hover documentation for key field ranges in `1`, `5`, `6`, `8`, and `9` records.
+- Hover documentation for key field ranges in `1`, `5`, `6`, `7`, `8`, and `9` records.
+
+## Parser coverage
+
+The internal parser supports typed record variants across the NACHA families used in the reference:
+
+- Origination-oriented records:
+  - File header/control, domestic batch header/control, domestic entry detail, addenda `05`, POS addenda `02`, NOC addenda `98`.
+  - International batch/header and entry context with IAT addenda `10` through `18`.
+- Return-oriented variants:
+  - Return-style entry/addenda discrimination for addenda `99` (including dishonored heuristic variant).
+- Padding:
+  - File padding `9` records are tracked after the file control record.
+
+Public internal API entry points:
+
+- `nacha.Parse(text)` returns a typed file model and parser diagnostics.
+- `(*nacha.File).Serialize()` round-trips parsed records back to NACHA text.
+- `nacha.Validate(text)` returns parser-backed validation diagnostics.
+- `nacha.HoverAt(text, line, character)` resolves field metadata from shared schema definitions.
 
 Reference: [ACH File Overview](https://achdevguide.nacha.org/ach-file-overview).
 
@@ -49,6 +70,11 @@ You can wire this binary from a VS Code extension (or local test extension host)
 2. Open a valid NACHA file and save: no diagnostics should appear.
 3. Break a line to fewer than 94 characters and save: diagnostics should appear.
 4. Hover over a `6` record at columns 2-3: transaction-code hover details should appear.
+
+## Round-trip guarantee
+
+For well-formed parsed records, serialization preserves 94-character fixed-width records and
+record ordering so `parse -> serialize -> parse` remains stable in tests.
 
 ## Example NACHA sample
 
