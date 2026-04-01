@@ -2,6 +2,8 @@
 
 A language server for [NACHA](https://achdevguide.nacha.org/ach-file-overview) ACH files.
 
+https://github.com/user-attachments/assets/9902920b-2d54-4e6c-96c5-9d3f0a89ca15
+
 ## Features
 
 - **Diagnostics** —
